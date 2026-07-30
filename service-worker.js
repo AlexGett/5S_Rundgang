@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.0.11';
+const CACHE_VERSION = 'v1.0.12';
 const CACHE_NAME = `5s-rundgang-cache-${CACHE_VERSION}`;
 
 // Liste der Dateien, die für die App-Shell benötigt werden
@@ -9,7 +9,7 @@ const urlsToCache = [
     './Logo.png',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-    './icons/icon-612x612.png'
+    './icons/icon-192x192.png'
     // Füge hier die Pfade zu deinen Icons hinzu, sobald du sie hast:
     // './icons/icon-192x192.png',
     // './icons/icon-512x512.png'
