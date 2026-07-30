@@ -8,7 +8,8 @@ const urlsToCache = [
     './manifest.json',
     './Logo.png',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+    './icons/icon-612x612.png'
     // Füge hier die Pfade zu deinen Icons hinzu, sobald du sie hast:
     // './icons/icon-192x192.png',
     // './icons/icon-512x512.png'
