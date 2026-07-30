@@ -1,7 +1,7 @@
 {
   "name": "5S Rundgang",
   "short_name": "5S Rundgang",
-  "start_url": "./index.html",
+  "start_url": "https://alexgett.github.io/5S_Rundgang/index.html",
   "display": "standalone",
   "background_color": "#f3f4f6",
   "theme_color": "#111827",
