@@ -231,6 +231,10 @@
 			<button id="exportJsonButton" class="btn-export-json">📱 Per App Teilen (Export)</button>
 			<button id="importJsonButton" class="btn-import-json">Laden (Import)</button>
 			<button id="deleteAllButton" class="btn-nav-danger" style="margin-top: 10px;">Alle Einträge löschen</button>
+			
+			<!-- NEUER REPARATUR-BUTTON -->
+			<button id="forceUpdateButton" class="btn-nav-secondary" style="margin-top: 10px; border-color: #f59e0b; color: #d97706; background-color: #fffbeb;">🔄 App reparieren / Update erzwingen</button>
+			
 			<input type="file" id="importJsonInput" accept=".json" style="display: none;">
 		</div>
 		<div class="version-footer">
@@ -266,11 +270,35 @@
 			document.getElementById('importJsonInput').addEventListener('change', importJsonHandler);
 			document.getElementById('deleteAllButton').addEventListener('click', deleteAllEntriesHandler);
 			
-			// Service Worker Registrierung und Versionsanzeige
+			// LOGIK FÜR DEN NEUEN REPARATUR-BUTTON
+			document.getElementById('forceUpdateButton').addEventListener('click', async () => {
+				if(confirm('Möchten Sie die App zwangsweise aktualisieren? Dies behebt Probleme mit veralteten Versionen.')) {
+					try {
+						if ('serviceWorker' in navigator) {
+							const registrations = await navigator.serviceWorker.getRegistrations();
+							for (let registration of registrations) {
+								await registration.unregister(); // Löscht den fehlerhaften Service Worker
+							}
+						}
+						if ('caches' in window) {
+							const cacheNames = await caches.keys();
+							for (let cacheName of cacheNames) {
+								await caches.delete(cacheName); // Löscht alle zwischengespeicherten alten Dateien
+							}
+						}
+						// Zwingt das Handy, die URL komplett frisch vom Server zu holen
+						window.location.href = window.location.pathname + '?t=' + new Date().getTime();
+					} catch(e) {
+						alert('Fehler beim Aktualisieren: ' + e.message);
+						window.location.reload(true);
+					}
+				}
+			});
+			
+			// Service Worker Registrierung (mit Cache-Bypass)
 			if ('serviceWorker' in navigator) {
 				let refreshing = false;
 
-				// SEHR WICHTIG: Wenn ein neues Update installiert wurde, lade die Seite automatisch neu!
 				navigator.serviceWorker.addEventListener('controllerchange', () => {
 					if (!refreshing) {
 						refreshing = true;
@@ -284,7 +312,8 @@
 					}
 				};
 
-				navigator.serviceWorker.register('./service-worker.js').then(registration => {
+				// NEU: { updateViaCache: 'none' } verbietet dem Browser, den HTTP-Cache zu nutzen!
+				navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).then(registration => {
 					registration.addEventListener('updatefound', () => {
 						const newWorker = registration.installing;
 						newWorker.addEventListener('statechange', () => {
