@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.0.14';
+const CACHE_VERSION = 'v1.0.15';
 const CACHE_NAME = `5s-rundgang-cache-${CACHE_VERSION}`;
 
 // Liste der Dateien, die für die App-Shell benötigt werden
