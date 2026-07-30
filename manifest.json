@@ -20,9 +20,9 @@
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-612x612.jpg",
+      "src": "icons/icon-612x612.png",
       "sizes": "612x612",
-      "type": "image/jpg",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
