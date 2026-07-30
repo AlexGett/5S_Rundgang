@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.1.0.17'; // Neue Versionsnummer
+const CACHE_VERSION = 'v1.1.0.18'; // Neue Versionsnummer
 const CACHE_NAME = `5s-rundgang-cache-${CACHE_VERSION}`;
 
 const urlsToCache = [
