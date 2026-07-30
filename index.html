@@ -268,20 +268,26 @@
 			
 			// Service Worker Registrierung und Versionsanzeige
 			if ('serviceWorker' in navigator) {
+				let refreshing = false;
+
+				// SEHR WICHTIG: Wenn ein neues Update installiert wurde, lade die Seite automatisch neu!
+				navigator.serviceWorker.addEventListener('controllerchange', () => {
+					if (!refreshing) {
+						refreshing = true;
+						window.location.reload();
+					}
+				});
+
 				const getVersion = () => {
 					if (navigator.serviceWorker.controller) {
-						console.log('Frage Version vom Controller an...');
 						navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
 					}
 				};
 
 				navigator.serviceWorker.register('./service-worker.js').then(registration => {
-					console.log('Service Worker Registrierung erfolgreich.');
-					// Lauschen, ob ein neuer Worker installiert wird
 					registration.addEventListener('updatefound', () => {
 						const newWorker = registration.installing;
 						newWorker.addEventListener('statechange', () => {
-							// Wenn der neue Worker aktiviert ist und die Seite kontrolliert
 							if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
 								getVersion();
 							}
@@ -289,10 +295,14 @@
 					});
 				});
 
-				navigator.serviceWorker.ready.then(getVersion); // Version abfragen, sobald der SW bereit ist
-				navigator.serviceWorker.addEventListener('controllerchange', getVersion); // Version abfragen, wenn ein neuer SW die Kontrolle übernimmt
+				navigator.serviceWorker.ready.then(getVersion);
 			}
-			navigator.serviceWorker.addEventListener('message', event => { if (event.data && event.data.type === 'VERSION') { document.getElementById('version-display').textContent = `Version ${event.data.version}`; } });
+			
+			navigator.serviceWorker.addEventListener('message', event => { 
+				if (event.data && event.data.type === 'VERSION') { 
+					document.getElementById('version-display').textContent = `Version ${event.data.version}`; 
+				} 
+			});
 		});
 
 		async function initDB() { return new Promise((res, rej) => { const req = indexedDB.open(DB_NAME, DB_VERSION); req.onupgradeneeded = e => { db=e.target.result; if(!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, {keyPath:'id', autoIncrement:true}); }; req.onsuccess = e => { db=e.target.result; res(); }; req.onerror = e => rej(e.target.errorCode); }); }
