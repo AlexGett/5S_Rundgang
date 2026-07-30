@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.1.0.15';
+const CACHE_VERSION = 'v1.1.0.16'; 
 const CACHE_NAME = `5s-rundgang-cache-${CACHE_VERSION}`;
 
 // Liste der Dateien, die für die App-Shell benötigt werden
@@ -10,23 +10,27 @@ const urlsToCache = [
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
     './icons/icon-192x192.png'
-    // Füge hier die Pfade zu deinen Icons hinzu, sobald du sie hast:
-    // './icons/icon-192x192.png',
-    // './icons/icon-512x512.png'
 ];
 
-// Installation des Service Workers und Caching der App-Shell
+// Installation des Service Workers
 self.addEventListener('install', event => {
+    // 2. FEHLER BEHOBEN: Überspringt die Warteschleife, damit das Update sofort angewendet wird
+    self.skipWaiting(); 
+    
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('Cache geöffnet und Dateien werden hinzugefügt');
-                return cache.addAll(urlsToCache);
+                // 3. LÖSUNG FÜR GITHUB PAGES: { cache: 'reload' } zwingt den Browser, 
+                // die Dateien frisch vom Server zu holen und nicht aus dem HTTP-Cache.
+                return cache.addAll(
+                    urlsToCache.map(url => new Request(url, { cache: 'reload' }))
+                );
             })
     );
 });
 
-// Aktivierung des Service Workers und Bereinigung alter Caches
+// Aktivierung und Bereinigung alter Caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -40,15 +44,15 @@ self.addEventListener('activate', event => {
             );
         })
     );
+    // Übernimmt sofort die Kontrolle über alle geöffneten Tabs der App
     return self.clients.claim();
 });
 
-// Abfangen von Fetch-Anfragen, um aus dem Cache zu bedienen
+// Abfangen von Fetch-Anfragen (Cache-First Strategie)
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Wenn die Anfrage im Cache ist, wird sie von dort zurückgegeben
                 return response || fetch(event.request);
             })
     );
