@@ -231,10 +231,6 @@
 			<button id="exportJsonButton" class="btn-export-json">📱 Per App Teilen (Export)</button>
 			<button id="importJsonButton" class="btn-import-json">Laden (Import)</button>
 			<button id="deleteAllButton" class="btn-nav-danger" style="margin-top: 10px;">Alle Einträge löschen</button>
-			
-			<!-- NEUER REPARATUR-BUTTON -->
-			<button id="forceUpdateButton" class="btn-nav-secondary" style="margin-top: 10px; border-color: #f59e0b; color: #d97706; background-color: #fffbeb;">🔄 App reparieren / Update erzwingen</button>
-			
 			<input type="file" id="importJsonInput" accept=".json" style="display: none;">
 		</div>
 		<div class="version-footer">
@@ -270,32 +266,7 @@
 			document.getElementById('importJsonInput').addEventListener('change', importJsonHandler);
 			document.getElementById('deleteAllButton').addEventListener('click', deleteAllEntriesHandler);
 			
-			// LOGIK FÜR DEN NEUEN REPARATUR-BUTTON
-			document.getElementById('forceUpdateButton').addEventListener('click', async () => {
-				if(confirm('Möchten Sie die App zwangsweise aktualisieren? Dies behebt Probleme mit veralteten Versionen.')) {
-					try {
-						if ('serviceWorker' in navigator) {
-							const registrations = await navigator.serviceWorker.getRegistrations();
-							for (let registration of registrations) {
-								await registration.unregister(); // Löscht den fehlerhaften Service Worker
-							}
-						}
-						if ('caches' in window) {
-							const cacheNames = await caches.keys();
-							for (let cacheName of cacheNames) {
-								await caches.delete(cacheName); // Löscht alle zwischengespeicherten alten Dateien
-							}
-						}
-						// Zwingt das Handy, die URL komplett frisch vom Server zu holen
-						window.location.href = window.location.pathname + '?t=' + new Date().getTime();
-					} catch(e) {
-						alert('Fehler beim Aktualisieren: ' + e.message);
-						window.location.reload(true);
-					}
-				}
-			});
-			
-			// Service Worker Registrierung (mit Cache-Bypass)
+			// Service Worker Registrierung (mit verbessertem Versions-Abruf)
 			if ('serviceWorker' in navigator) {
 				let refreshing = false;
 
@@ -306,25 +277,32 @@
 					}
 				});
 
-				const getVersion = () => {
-					if (navigator.serviceWorker.controller) {
+				const getVersion = (worker) => {
+					if (worker) {
+						worker.postMessage({ type: 'GET_VERSION' });
+					} else if (navigator.serviceWorker.controller) {
 						navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
 					}
 				};
 
-				// NEU: { updateViaCache: 'none' } verbietet dem Browser, den HTTP-Cache zu nutzen!
 				navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).then(registration => {
+					if (registration.active) {
+						getVersion(registration.active);
+					}
+					
 					registration.addEventListener('updatefound', () => {
 						const newWorker = registration.installing;
 						newWorker.addEventListener('statechange', () => {
-							if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-								getVersion();
+							if (newWorker.state === 'activated') {
+								getVersion(newWorker);
 							}
 						});
 					});
 				});
 
-				navigator.serviceWorker.ready.then(getVersion);
+				navigator.serviceWorker.ready.then(registration => {
+					getVersion(registration.active);
+				});
 			}
 			
 			navigator.serviceWorker.addEventListener('message', event => { 
