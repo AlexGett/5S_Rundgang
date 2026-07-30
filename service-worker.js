@@ -1,7 +1,6 @@
-const CACHE_VERSION = 'v1.1.0.16'; 
+const CACHE_VERSION = 'v1.1.0.17'; // Neue Versionsnummer
 const CACHE_NAME = `5s-rundgang-cache-${CACHE_VERSION}`;
 
-// Liste der Dateien, die für die App-Shell benötigt werden
 const urlsToCache = [
     './',
     './index.html',
@@ -12,53 +11,58 @@ const urlsToCache = [
     './icons/icon-192x192.png'
 ];
 
-// Installation des Service Workers
 self.addEventListener('install', event => {
-    // 2. FEHLER BEHOBEN: Überspringt die Warteschleife, damit das Update sofort angewendet wird
-    self.skipWaiting(); 
-    
+    self.skipWaiting(); // Erzwingt das sofortige Installieren
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('Cache geöffnet und Dateien werden hinzugefügt');
-                // 3. LÖSUNG FÜR GITHUB PAGES: { cache: 'reload' } zwingt den Browser, 
-                // die Dateien frisch vom Server zu holen und nicht aus dem HTTP-Cache.
-                return cache.addAll(
-                    urlsToCache.map(url => new Request(url, { cache: 'reload' }))
-                );
-            })
+        caches.open(CACHE_NAME).then(cache => {
+            // Holt die Dateien garantiert neu vom Server und nicht aus dem HTTP-Cache
+            return cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' })));
+        })
     );
 });
 
-// Aktivierung und Bereinigung alter Caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheName !== CACHE_NAME) {
-                        console.log('Alter Cache wird gelöscht:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         })
     );
-    // Übernimmt sofort die Kontrolle über alle geöffneten Tabs der App
-    return self.clients.claim();
+    return self.clients.claim(); // Übernimmt sofort die Kontrolle
 });
 
-// Abfangen von Fetch-Anfragen (Cache-First Strategie)
 self.addEventListener('fetch', event => {
+    // NETWORK FIRST STRATEGIE FÜR HTML-DATEIEN
+    if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Wenn wir online sind und die Datei laden konnten, aktualisieren wir den Cache im Hintergrund
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+                    return response;
+                })
+                .catch(() => {
+                    // Nur wenn wir offline sind, laden wir aus dem Cache
+                    return caches.match(event.request);
+                })
+        );
+        return;
+    }
+
+    // CACHE FIRST STRATEGIE FÜR DEN REST (Bilder, JS, CSS) für schnelle Ladezeiten
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request);
-            })
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request);
+        })
     );
 });
 
-// Senden der Version an den Client
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'GET_VERSION') {
         event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
