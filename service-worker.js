@@ -4,7 +4,7 @@ const CACHE_NAME = `5s-rundgang-cache-${CACHE_VERSION}`;
 // Liste der Dateien, die für die App-Shell benötigt werden
 const urlsToCache = [
     './',
-    './5S_Rundgang_Handy.html',
+    './index.html',
     './manifest.json',
     './Logo.png',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
